@@ -1,2 +1,2 @@
 # D2DExportImage
-Convert svg to png with scale factor
+Convert svg to png using Direct2D
