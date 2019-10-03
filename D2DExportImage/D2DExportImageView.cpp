@@ -202,7 +202,7 @@ HRESULT CD2DExportImageView::GetSvgDocumentSize(std::wstring str_sourcefile, D2D
 		imagesize.width = tmpwidth;
 	}
 
-	if (imagesize.width == 0 && imagesize.width == 0)
+	if (imagesize.width == 0 && imagesize.height == 0)
 	{
 		return E_FAIL;
 	}
