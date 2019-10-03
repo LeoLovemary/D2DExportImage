@@ -5,8 +5,12 @@
 #include "pch.h"
 #include "framework.h"
 #include "D2DExportImage.h"
-
+#include "D2DExportImageDoc.h"
+#include "D2DExportImageView.h"
 #include "MainFrm.h"
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -18,6 +22,7 @@ IMPLEMENT_DYNCREATE(CMainFrame, CFrameWnd)
 
 BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_CREATE()
+	ON_COMMAND(ID_TOOLS_CONVERT, &CMainFrame::OnToolsConvert)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -93,4 +98,83 @@ void CMainFrame::Dump(CDumpContext& dc) const
 
 
 // CMainFrame message handlers
+
+
+
+void CMainFrame::OnToolsConvert()
+{
+	D2D1_SIZE_F imagesize;
+	HRESULT hr = S_OK;
+	wchar_t ownPth[MAX_PATH];
+	
+	CD2DExportImageView* pView = static_cast<CD2DExportImageView*> (this->GetActiveView());
+	
+
+	if (pView->GetFactory() == nullptr)
+	{
+		if (FAILED(pView->Init2D2BitmapFactory()))
+		{
+			return;
+		}
+	}
+
+	if (GetModuleFileName(GetModuleHandle(NULL), ownPth, (sizeof(ownPth))) == 0)
+	{
+		return;
+	}
+	
+
+	fs::path path_exe = ownPth;
+
+
+	CFolderPickerDialog folderPickerDialog(path_exe.parent_path().native().c_str(), OFN_FILEMUSTEXIST | OFN_ALLOWMULTISELECT | OFN_ENABLESIZING, this,
+		sizeof(OPENFILENAME));
+
+	CString folderPath;
+
+	if (folderPickerDialog.DoModal() == IDOK)
+	{
+
+		POSITION pos = folderPickerDialog.GetStartPosition();
+
+		while (pos)
+		{
+			folderPath = folderPickerDialog.GetNextPathName(pos);
+		}
+	}
+
+
+	if (folderPath != _T(""))
+	{
+
+		std::wstring path = folderPath;
+
+		
+		for (const auto& entry : fs::directory_iterator(path))
+		{
+			fs::path current_file = entry.path();
+
+
+			if (!fs::is_directory(current_file)) //we eliminate directories
+			{				
+				OutputDebugString(current_file.native().c_str());
+				if (current_file.extension() == L".svg")
+				{
+
+					fs::path file_out = path;
+					file_out.append(current_file.filename().c_str());
+
+					hr = pView->GetSvgDocumentSize(current_file.native().c_str(), imagesize);
+					pView->SaveImage(current_file.native().c_str(), file_out += _T("02.png"), imagesize, 2.0f);
+					pView->SaveImage(current_file.native().c_str(), file_out += _T("04.png"), imagesize, 4.0f);
+					pView->SaveImage(current_file.native().c_str(), file_out += _T("08.png"), imagesize, 8.0f);
+					pView->SaveImage(current_file.native().c_str(), file_out += _T("05.png"), imagesize, 0.5f);
+					pView->SaveImage(current_file.native().c_str(), file_out += _T("03.png"), imagesize, 0.3f);
+					pView->SaveImage(current_file.native().c_str(), file_out += _T("0.2.png"), imagesize, 0.2f);
+					pView->SaveImage(current_file.native().c_str(), file_out += _T("0.1.png"), imagesize, 0.1f);
+				}
+			}
+		}
+	}
+}
 

@@ -35,15 +35,15 @@ public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
-protected:
-
-
-private:
-	void SaveImage(std::wstring str_sourcefile, std::wstring str_destfile, D2D1_SIZE_F imagesize, FLOAT factor);
-	HRESULT DrawImage(CComPtr <ID2D1RenderTarget> pRT, std::wstring str_sourcefile, D2D1_SIZE_F imagesize, FLOAT factor);
+public:
 	HRESULT Init2D2BitmapFactory();
-	void ExportImage(std::wstring str_destfile, D2D1_SIZE_F imagesize, FLOAT factor);
 	HRESULT GetSvgDocumentSize(std::wstring str_sourcefile, D2D1_SIZE_F& imagesize);
+	void SaveImage(std::wstring str_sourcefile, std::wstring str_destfile, D2D1_SIZE_F imagesize, FLOAT factor);
+	CComPtr<ID2D1Factory> GetFactory() { return pD2DFactory_; }
+private:
+	HRESULT DrawImage(CComPtr <ID2D1RenderTarget> pRT, std::wstring str_sourcefile, D2D1_SIZE_F imagesize, FLOAT factor);
+	void ExportImage(std::wstring str_destfile, D2D1_SIZE_F imagesize, FLOAT factor);
+
 
 private:
 	CComPtr<ID2D1Factory>		pD2DFactory_ = nullptr;

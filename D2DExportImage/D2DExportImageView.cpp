@@ -59,23 +59,7 @@ int CD2DExportImageView::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	EnableD2DSupport(); // Enable Direct2D support for this window:
 
-	CSize s{ 100,100 };
-	D2D1_SIZE_F imagesize;
-	HRESULT hr = S_OK;
 
-	if (FAILED(hr = Init2D2BitmapFactory()))
-	{
-		return -1;
-	}
-	hr = GetSvgDocumentSize(_T("C:\\temp\\Windows_logo.svg"), imagesize);
-
-	SaveImage(_T("C:\\temp\\Windows_logo.svg"), _T("C:\\temp\\out2.png"), imagesize, 2.0f);
-	SaveImage(_T("C:\\temp\\Windows_logo.svg"), _T("C:\\temp\\out4.png"), imagesize, 4.0f);
-	SaveImage(_T("C:\\temp\\Windows_logo.svg"), _T("C:\\temp\\out8.png"), imagesize, 8.0f);
-	SaveImage(_T("C:\\temp\\Windows_logo.svg"), _T("C:\\temp\\out5.png"), imagesize, 0.5f);
-	SaveImage(_T("C:\\temp\\Windows_logo.svg"), _T("C:\\temp\\out3.png"), imagesize, 0.3f);
-	SaveImage(_T("C:\\temp\\Windows_logo.svg"), _T("C:\\temp\\out2.png"), imagesize, 0.2f);
-	SaveImage(_T("C:\\temp\\Windows_logo.svg"), _T("C:\\temp\\out1.png"), imagesize, 0.1f);
 	return 0;
 }
 
@@ -131,6 +115,7 @@ HRESULT CD2DExportImageView::Init2D2BitmapFactory()
 {
 	HRESULT hr = S_OK;
 
+	
 	if (FAILED(hr = CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_IWICImagingFactory, reinterpret_cast<void**>(&pWICFactory_))))
 	{
 		OutputDebugString(L"CoCreateInstance CLSID_WICImagingFactory failed");
@@ -155,7 +140,8 @@ HRESULT CD2DExportImageView::GetSvgDocumentSize(std::wstring str_sourcefile, D2D
 	CComPtr <ID2D1RenderTarget> pRT			= nullptr;
 	CComPtr <IStream>			ptemplate	= nullptr;
 	CComPtr <IWICBitmap>		pWICBitmap	= nullptr;
-	FLOAT						tmp;
+	FLOAT						tmpheight	= 0;
+	FLOAT						tmpwidth	= 0;
 	D2D1_SIZE_F					s			= {100,100};
 
 	if (FAILED(hr = pWICFactory_->CreateBitmap( static_cast<UINT>(s.height), static_cast<UINT>(s.width), GUID_WICPixelFormat32bppBGR, WICBitmapCacheOnLoad, &pWICBitmap)))
@@ -186,19 +172,42 @@ HRESULT CD2DExportImageView::GetSvgDocumentSize(std::wstring str_sourcefile, D2D
 
 	svgDocument->GetRoot(&svgelement);
 
-	if (FAILED(hr = svgelement->GetAttributeValue(L"width", &tmp)))
+	D2D1_SVG_VIEWBOX viewBox;
+
+	if (FAILED(hr = svgelement->GetAttributeValue(L"viewBox", D2D1_SVG_ATTRIBUTE_POD_TYPE_VIEWBOX, static_cast<void*>(&viewBox), sizeof(viewBox))))
 	{
-		ASSERT(S_OK != hr);
-		return hr;
+		viewBox.height = viewBox.width = 0;
 	}
-	imagesize.width = tmp;
-	if (FAILED(hr = svgelement->GetAttributeValue(L"height", &tmp)))
+
+	if (FAILED(hr = svgelement->GetAttributeValue(L"width", &tmpwidth)))
+	{		
+		tmpwidth = 0;
+	}
+
+	if (FAILED(hr = svgelement->GetAttributeValue(L"height", &tmpheight)))
 	{
-		ASSERT(S_OK != hr);
-		return hr;
+	
+		tmpheight = 0;
 	}
-	imagesize.height = tmp;
-	return (hr);
+
+	if (viewBox.height != 0 && viewBox.width != 0)
+	{
+		imagesize.height = viewBox.height;
+		imagesize.width = viewBox.width;
+	}
+
+	if (tmpheight != 0 && tmpwidth != 0)
+	{
+		imagesize.height = tmpheight;
+		imagesize.width = tmpwidth;
+	}
+
+	if (imagesize.width == 0 && imagesize.width == 0)
+	{
+		return E_FAIL;
+	}
+
+	return hr;
 }
 
 HRESULT CD2DExportImageView::DrawImage(CComPtr <ID2D1RenderTarget> pRT, std::wstring str_sourcefile, D2D1_SIZE_F imagesize, FLOAT factor)
